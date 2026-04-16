@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ERGON</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:    #181c23;
+  --s1:    #222831;
+  --s2:    #2d323a;
+  --s3:    #393E46;
+  --bd:    #3a3f47;
+  --p:     #DFD0B8;
+  --pdim:  rgba(223,208,184,.1);
+  --text:  #DFD0B8;
+  --muted: #948979;
+  --red:   #f87171;
+  --reddim:rgba(248,113,113,.13);
+}
+
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;padding:36px 20px 72px;display:flex;flex-direction:column}
+
+header{text-align:center;margin-bottom:20px}
+header h1{font-size:.9rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+
+/* filter bar */
+.filter-bar{display:flex;align-items:center;gap:5px;max-width:1400px;
+  margin:0 auto 20px;padding:6px 10px;flex-wrap:wrap;
+  background:var(--s1);border:1px solid var(--bd);border-radius:6px;min-height:36px;
+  flex-direction:column}
+.filter-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;justify-content:center;width:100%}
+.ftag{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--bd);
+  border-radius:10px;font-size:.61rem;padding:2px 8px;cursor:pointer;
+  transition:opacity .12s,border-color .12s;user-select:none;color:var(--text)}
+.ftag.inactive{opacity:.35}
+.ftag.active{border-color:currentColor}
+
+/* board */
+.board{display:flex;gap:18px;max-width:1400px;margin:0 auto;align-items:flex-start;
+  overflow-x:auto;padding-bottom:6px;flex:1}
+.board::-webkit-scrollbar{height:5px}
+.board::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+
+.col-drop-indicator{width:3px;background:var(--p);border-radius:2px;
+  align-self:stretch;min-height:60px;flex-shrink:0;pointer-events:none}
+
+/* column */
+.col{background:var(--s1);border:1px solid var(--bd);border-radius:6px;
+  padding:14px;width:275px;flex-shrink:0;display:flex;flex-direction:column;
+  gap:11px;transition:border-color .15s,background .15s}
+.col.over{border-color:var(--p);background:#272d2a}
+
+.col-head{display:flex;align-items:center;gap:7px;min-height:20px}
+.col-grip{color:var(--muted);cursor:grab;font-size:.85rem;flex-shrink:0;line-height:1;
+  padding:1px 2px;border-radius:2px;transition:color .12s;user-select:none}
+.col-grip:hover{color:var(--text)}
+.col-grip:active{cursor:grabbing}
+.col-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.col-name{flex:1;font-size:.67rem;font-weight:600;letter-spacing:.13em;
+  text-transform:uppercase;min-width:0}
+.col-count{font-size:.63rem;color:var(--muted);flex-shrink:0}
+.ico{background:transparent;border:none;color:var(--muted);cursor:pointer;
+  border-radius:3px;padding:2px 5px;font-size:.7rem;line-height:1;
+  transition:color .12s,background .12s;flex-shrink:0}
+.ico:hover{color:var(--text);background:var(--s3)}
+
+/* add row */
+.add-row{display:flex;gap:5px}
+.add-row input{flex:1;background:var(--s2);border:1px solid var(--bd);
+  border-radius:4px;color:var(--text);font-family:inherit;font-size:.79rem;
+  padding:6px 9px;outline:none;transition:border-color .15s}
+.add-row input::placeholder{color:var(--muted)}
+.add-row input:focus{border-color:var(--p)}
+.btn-plus{background:var(--p);border:none;border-radius:4px;color:var(--bg);
+  cursor:pointer;font-size:.9rem;padding:6px 11px;line-height:1;
+  transition:opacity .12s,transform .1s;font-weight:600}
+.btn-plus:hover{opacity:.82}
+.btn-plus:active{transform:scale(.92)}
+
+/* card list */
+.card-list{display:flex;flex-direction:column;gap:5px;min-height:34px}
+
+/* card */
+.card{background:var(--s2);border:1px solid var(--bd);border-radius:4px;
+  padding:8px 10px;cursor:grab;animation:pop .15s ease;
+  transition:border-color .12s,box-shadow .12s;user-select:none}
+.card:hover{border-color:var(--p);box-shadow:0 0 0 2px var(--pdim)}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.25}
+.card.hidden-by-filter{display:none}
+.card.done .card-title{text-decoration:line-through;color:var(--muted)}
+.card.done{opacity:.5}
+
+.card-top{display:flex;align-items:flex-start;gap:7px}
+.chk{width:16px;height:16px;border:1.5px solid var(--bd);border-radius:3px;
+  flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;margin-top:1px;transition:background .12s,border-color .12s}
+.chk.on{background:var(--p);border-color:var(--p)}
+.chk svg{width:9px;height:9px;stroke:var(--bg);stroke-width:2.5;fill:none;
+  opacity:0;transition:opacity .1s}
+.chk.on svg{opacity:1}
+.card-body{flex:1;min-width:0;cursor:pointer}
+.card-title{font-size:.8rem;line-height:1.4;word-break:break-word}
+.card-meta{display:flex;gap:5px;margin-top:4px;align-items:center;flex-wrap:wrap}
+
+/* priority badges */
+.card-priority{font-size:.6rem;padding:1px 5px;border-radius:2px;font-weight:500;flex-shrink:0}
+.pri-high{background:rgba(248,113,113,.15);color:#f87171}
+.pri-med {background:rgba(251,191,36,.12);color:#fbbf24}
+.pri-low {background:rgba(52,211,153,.12);color:#34d399}
+
+/* tag pills on card */
+.card-tag{font-size:.6rem;padding:1px 6px;border-radius:10px;
+  flex-shrink:0;border:1px solid transparent}
+
+.placeholder{border:2px dashed var(--p);border-radius:4px;height:40px;background:var(--pdim)}
+.empty{color:var(--muted);font-size:.71rem;text-align:center;padding:8px 0}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* new list btn */
+.btn-new-list{width:180px;flex-shrink:0;height:40px;background:var(--s1);
+  border:1px dashed var(--bd);border-radius:6px;color:var(--muted);
+  font-family:inherit;font-size:.76rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  align-self:flex-start;transition:border-color .15s,color .15s,background .15s}
+.btn-new-list:hover{border-color:var(--p);color:var(--p);background:var(--pdim)}
+
+footer{text-align:center;padding-top:28px;font-size:.7rem;
+  letter-spacing:.14em;color:var(--muted);font-weight:500}
+
+/* backdrop */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);
+  display:flex;align-items:center;justify-content:center;
+  z-index:200;padding:20px;backdrop-filter:blur(5px)}
+.backdrop.hide{display:none}
+
+/* modal */
+.modal{background:var(--s1);border:1px solid var(--bd);border-radius:6px;
+  width:100%;padding:20px;display:flex;flex-direction:column;gap:13px}
+.modal-top{display:flex;align-items:center;justify-content:space-between}
+.modal-lbl{font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+#card-modal .modal{max-width:460px;max-height:86vh;overflow-y:auto}
+#list-modal .modal{max-width:240px}
+
+.title-input{width:100%;background:transparent;border:none;
+  border-bottom:1px solid var(--bd);color:var(--text);font-family:inherit;
+  font-size:.92rem;font-weight:500;padding:5px 0;outline:none;transition:border-color .15s}
+.title-input:focus{border-bottom-color:var(--p)}
+
+/* priority */
+.pri-row{display:flex;gap:4px}
+.pri-opt{background:var(--s2);border:1px solid var(--bd);border-radius:3px;
+  color:var(--muted);cursor:pointer;font-family:inherit;font-size:.68rem;
+  padding:3px 9px;transition:all .12s}
+.pri-opt:hover{border-color:var(--p);color:var(--text)}
+.pri-opt.sel{border-color:currentColor}
+.pri-opt[data-v=high].sel{color:#f87171;background:rgba(248,113,113,.1)}
+.pri-opt[data-v=med].sel {color:#fbbf24;background:rgba(251,191,36,.1)}
+.pri-opt[data-v=low].sel {color:#34d399;background:rgba(52,211,153,.1)}
+.pri-opt[data-v=none].sel{color:var(--muted);background:var(--s3)}
+
+/* tags in modal */
+.tag-create-row{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.tag-color-btn{width:18px;height:18px;border-radius:50%;flex-shrink:0;cursor:pointer;
+  border:2px solid rgba(255,255,255,.15);transition:transform .12s}
+.tag-color-btn:hover{transform:scale(1.2)}
+.tag-new-input{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:3px;
+  color:var(--text);font-family:inherit;font-size:.75rem;padding:4px 8px;
+  outline:none;transition:border-color .15s}
+.tag-new-input:focus{border-color:var(--p)}
+.tag-new-input::placeholder{color:var(--muted)}
+
+/* tag pool */
+.tag-pool{display:flex;flex-wrap:wrap;gap:5px}
+.tpill{display:inline-flex;align-items:center;gap:3px;
+  border:1px solid var(--bd);border-radius:10px;font-size:.61rem;
+  padding:2px 5px 2px 8px;cursor:pointer;user-select:none;
+  transition:opacity .12s,border-color .12s;color:var(--text)}
+.tpill:hover{opacity:.8}
+.tpill.off{opacity:.4}
+.tpill.off:hover{opacity:.7}
+.tpill-x{font-size:.58rem;padding:0 1px;color:rgba(255,255,255,.4);
+  line-height:1;transition:color .1s}
+.tpill-x:hover{color:var(--red)!important}
+
+/* editor */
+.editor-wrap{border:1px solid var(--bd);border-radius:4px;overflow:hidden;transition:border-color .15s}
+.editor-wrap:focus-within{border-color:var(--p)}
+.fmt-bar{display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--bd);background:var(--s2)}
+.fmt-btn{background:transparent;border:none;border-radius:3px;color:var(--muted);
+  cursor:pointer;font-family:inherit;font-size:.71rem;padding:2px 6px;line-height:1.5;
+  transition:color .1s,background .1s}
+.fmt-btn:hover{color:var(--text);background:var(--s3)}
+.fmt-btn b{font-weight:700}
+.fmt-btn i{font-style:italic}
+[contenteditable]{outline:none;min-height:85px;padding:9px 11px;
+  font-family:'Inter',sans-serif;font-size:.81rem;line-height:1.65;
+  color:var(--text);background:var(--s2)}
+[contenteditable] ul,[contenteditable] ol{padding-left:18px;margin:3px 0}
+[contenteditable] li{margin:2px 0}
+[contenteditable] strong{font-weight:600}
+[contenteditable] em{font-style:italic}
+[contenteditable]:empty::before{content:attr(data-ph);color:var(--muted);pointer-events:none}
+
+.task-created{font-size:.63rem;color:var(--muted)}
+.modal-foot{display:flex;align-items:center;gap:6px}
+.modal-foot .spacer{flex:1}
+
+.btn-del-red{background:var(--reddim);border:1px solid rgba(248,113,113,.2);
+  border-radius:3px;color:var(--red);cursor:pointer;font-family:inherit;
+  font-size:.72rem;padding:5px 10px;transition:background .12s}
+.btn-del-red:hover{background:rgba(248,113,113,.25)}
+.btn-cancel{background:var(--s2);border:1px solid var(--bd);border-radius:3px;
+  color:var(--text);cursor:pointer;font-family:inherit;font-size:.76rem;
+  padding:6px 13px;transition:background .12s}
+.btn-cancel:hover{background:var(--s3)}
+
+/* list modal */
+.lm-foot{justify-content:center;gap:8px}
+.lm-foot .btn-del-red,.lm-foot .btn-cancel{flex:1;text-align:center;padding:5px 0;font-size:.74rem}
+.lm-row{display:flex;align-items:center;gap:9px}
+.lm-dot{width:20px;height:20px;border-radius:50%;cursor:pointer;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.1);transition:transform .12s}
+.lm-dot:hover{transform:scale(1.15)}
+.lm-name{flex:1;background:transparent;border:none;border-bottom:1px solid var(--bd);
+  color:var(--text);font-family:inherit;font-size:.8rem;padding:3px 0;outline:none;
+  transition:border-color .15s}
+.lm-name:focus{border-bottom-color:var(--p)}
+
+/* color picker */
+#cpicker{position:fixed;z-index:500;background:var(--s1);border:1px solid var(--bd);
+  border-radius:6px;padding:10px;width:218px;
+  box-shadow:0 8px 32px rgba(0,0,0,.7);display:flex;flex-direction:column;gap:8px}
+#cpicker.hide{display:none}
+#cp-sv{display:block;width:198px;height:140px;cursor:crosshair;border-radius:3px;flex-shrink:0}
+.cp-hue-wrap{height:12px}
+#cp-hue{-webkit-appearance:none;appearance:none;width:100%;height:12px;
+  border-radius:2px;outline:none;cursor:pointer;border:none;
+  background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+#cp-hue::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:#fff;border:2px solid var(--bg);cursor:pointer}
+#cp-hue::-moz-range-thumb{width:14px;height:14px;border-radius:50%;
+  background:#fff;border:2px solid var(--bg);cursor:pointer}
+.cp-bottom{display:flex;align-items:center;gap:7px}
+#cp-swatch{width:26px;height:26px;border-radius:3px;flex-shrink:0;border:1px solid var(--bd)}
+#cp-hex{flex:1;background:var(--s2);border:1px solid var(--bd);border-radius:3px;
+  color:var(--text);font-family:monospace;font-size:.78rem;padding:4px 7px;outline:none;
+  transition:border-color .15s}
+#cp-hex:focus{border-color:var(--p)}
+#cp-cur{position:absolute;width:10px;height:10px;border-radius:50%;
+  border:2px solid #fff;transform:translate(-50%,-50%);pointer-events:none;
+  box-shadow:0 0 0 1px rgba(0,0,0,.5);top:0;left:0}
+.cp-sv-wrap{position:relative;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<header><h1>ERGON</h1></header>
+
+<!-- tag filter bar -->
+<div class="filter-bar" id="filter-bar"></div>
+
+<div class="board" id="board">
+  <button class="btn-new-list" onclick="createList()">＋ add list</button>
+</div>
+
+<!-- card modal -->
+<div class="backdrop hide" id="card-modal">
+  <div class="modal">
+    <div class="modal-top">
+      <span class="modal-lbl" id="cm-label">task</span>
+      <button class="ico" onclick="closeCardModal()">✕</button>
+    </div>
+    <input class="title-input" id="cm-title" type="text" placeholder="task title…"/>
+    <div>
+      <div class="modal-lbl" style="margin-bottom:6px">priority</div>
+      <div class="pri-row">
+        <button class="pri-opt sel" data-v="none" onclick="setPri(this)">none</button>
+        <button class="pri-opt" data-v="low"  onclick="setPri(this)">low</button>
+        <button class="pri-opt" data-v="med"  onclick="setPri(this)">medium</button>
+        <button class="pri-opt" data-v="high" onclick="setPri(this)">high</button>
+      </div>
+    </div>
+    <div>
+      <div class="modal-lbl" style="margin-bottom:6px">tags</div>
+      <div class="tag-create-row">
+        <div class="tag-color-btn" id="cm-tag-color" onclick="openTagPicker(this)"></div>
+        <input class="tag-new-input" id="cm-tag-input" type="text"
+          placeholder="new tag + enter…" onkeydown="handleTagInput(event)"/>
+      </div>
+      <div class="tag-pool" id="cm-tag-pool"></div>
+    </div>
+    <div>
+      <div class="modal-lbl" style="margin-bottom:6px">description</div>
+      <div class="editor-wrap">
+        <div class="fmt-bar">
+          <button class="fmt-btn" onmousedown="fmt(event,'bold')"><b>B</b></button>
+          <button class="fmt-btn" onmousedown="fmt(event,'italic')"><i>I</i></button>
+          <button class="fmt-btn" onmousedown="fmt(event,'underline')" style="text-decoration:underline">U</button>
+          <button class="fmt-btn" onmousedown="fmt(event,'strikeThrough')" style="text-decoration:line-through">S</button>
+          <button class="fmt-btn" onmousedown="fmt(event,'insertUnorderedList')">• list</button>
+          <button class="fmt-btn" onmousedown="fmt(event,'insertOrderedList')">1. list</button>
+        </div>
+        <div id="cm-desc" contenteditable="true" data-ph="add a description…"></div>
+      </div>
+    </div>
+    <div class="task-created" id="cm-created"></div>
+    <div class="modal-foot">
+      <div class="spacer"></div>
+      <button class="btn-del-red" onclick="deleteFromModal()">delete</button>
+      <button class="btn-cancel" onclick="cancelCardModal()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- list settings modal -->
+<div class="backdrop hide" id="list-modal">
+  <div class="modal">
+    <div class="modal-top">
+      <span class="modal-lbl">list settings</span>
+      <button class="ico" onclick="closeListModal()">✕</button>
+    </div>
+    <div class="lm-row">
+      <div class="lm-dot" id="lm-dot" onclick="openPickerForList()"></div>
+      <input class="lm-name" id="lm-name" type="text" placeholder="list name…"/>
+    </div>
+    <div class="modal-foot lm-foot">
+      <button class="btn-del-red" onclick="deleteList()">delete</button>
+      <button class="btn-cancel" onclick="cancelListModal()">cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- color picker -->
+<div id="cpicker" class="hide">
+  <div class="cp-sv-wrap">
+    <canvas id="cp-sv" width="198" height="140"></canvas>
+    <div id="cp-cur"></div>
+  </div>
+  <div class="cp-hue-wrap">
+    <input type="range" id="cp-hue" min="0" max="359" value="0" oninput="cpHueChange(this.value)"/>
+  </div>
+  <div class="cp-bottom">
+    <div id="cp-swatch"></div>
+    <input type="text" id="cp-hex" maxlength="7" placeholder="#000000" oninput="cpHexChange(this.value)"/>
+  </div>
+</div>
+
+<footer><a href="https://github.com/TxT14" target="_blank"
+  style="color:var(--muted);text-decoration:none;letter-spacing:.14em;transition:color .15s"
+  onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">TxT</a></footer>
+
+<script>
+// ── storage ───────────────────────────────────────────────
+const S={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v)),
+  del:k=>localStorage.removeItem(k)
+}
+
+let lists=S.get('lists')||[]
+
+const uid=()=>Math.random().toString(36).slice(2,9)
+const getItems=lid=>S.get('items_'+lid)||[]
+const setItems=(lid,items)=>S.set('items_'+lid,items)
+const PRIMAP={high:'pri-high',med:'pri-med',low:'pri-low',none:''}
+
+// ── global tags  {id, name, color} ───────────────────────
+function getAllTags(){ return S.get('alltags')||[] }
+function saveAllTags(a){ S.set('alltags',a) }
+function getTagById(id){ return getAllTags().find(t=>t.id===id)||null }
+
+// ── active tag filters ────────────────────────────────────
+let activeFilters=new Set()
+let activePriorities=new Set()  // for priority filters
+
+function renderFilterBar(){
+  const bar=document.getElementById('filter-bar')
+  const tags=getAllTags()
+  const hasPri=activePriorities.size>0
+  const hasTags=activeFilters.size>0
+  
+  if(!tags.length&&!hasPri){
+    bar.style.display='none'
+    return
+  }
+  
+  bar.style.display='flex'
+  
+  // priority filters - styled like card priority badges
+  const priFilters=['high','med','low'].map(p=>{
+    const on=activePriorities.has(p)
+    const priClasses={high:'pri-high',med:'pri-med',low:'pri-low'}
+    const labels={high:'high',med:'med',low:'low'}
+    return `<span class="card-priority ${priClasses[p]}${on?'':' inactive'}" 
+      style="cursor:pointer;opacity:${on?'1':'.35'};border:1px solid ${on?'currentColor':'transparent'};transition:opacity .12s,border-color .12s" 
+      onclick="togglePriFilter('${p}')">${labels[p]}</span>`
+  }).join('')
+  
+  // tag filters - with more transparency
+  const tagFilters=tags.map(t=>{
+    const on=activeFilters.has(t.id)
+    return `<span class="ftag${on?' active':' inactive'}"
+      style="background:${hexWithAlpha(t.color,.2)};color:#fff;border-color:${on?t.color:hexWithAlpha(t.color,.4)}"
+      onclick="toggleFilter('${t.id}')">${esc(t.name)}</span>`
+  }).join('')
+  
+  // build rows - both centered
+  let html=''
+  if(priFilters) html+=`<div class="filter-row">${priFilters}</div>`
+  if(tagFilters) html+=`<div class="filter-row">${tagFilters}</div>`
+  bar.innerHTML=html
+}
+
+function toggleFilter(id){
+  if(activeFilters.has(id)) activeFilters.delete(id)
+  else activeFilters.add(id)
+  renderFilterBar()
+  applyFilters()
+}
+
+function togglePriFilter(pri){
+  if(activePriorities.has(pri)) activePriorities.delete(pri)
+  else activePriorities.add(pri)
+  renderFilterBar()
+  applyFilters()
+}
+
+function applyFilters(){
+  document.querySelectorAll('.card').forEach(el=>{
+    const noFilters=!activeFilters.size&&!activePriorities.size
+    if(noFilters){el.classList.remove('hidden-by-filter');return}
+    
+    const {items,idx}=find(el.dataset.id)
+    if(idx<0){el.classList.remove('hidden-by-filter');return}
+    
+    const item=items[idx]
+    
+    // check tag filters (AND logic - card must have ALL active filter tags)
+    let tagMatch=true
+    if(activeFilters.size>0){
+      const cardTags=new Set(item.tags||[])
+      tagMatch=[...activeFilters].every(fid=>cardTags.has(fid))
+    }
+    
+    // check priority filters (OR logic - card must match ANY active priority)
+    let priMatch=true
+    if(activePriorities.size>0){
+      const cardPri=item.priority||'none'
+      priMatch=activePriorities.has(cardPri)
+    }
+    
+    // show card if it matches both tag AND priority filters
+    el.classList.toggle('hidden-by-filter',!(tagMatch&&priMatch))
+  })
+}
+
+function hexWithAlpha(hex,a){
+  hex=hex.replace('#','')
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('')
+  const r=parseInt(hex.slice(0,2),16)
+  const g=parseInt(hex.slice(2,4),16)
+  const b=parseInt(hex.slice(4,6),16)
+  return `rgba(${r},${g},${b},${a})`
+}
+
+// ── render board ──────────────────────────────────────────
+function renderBoard(){
+  const board=document.getElementById('board')
+  const btn=board.querySelector('.btn-new-list')
+  board.querySelectorAll('.col').forEach(c=>c.remove())
+  lists.forEach(l=>board.insertBefore(buildCol(l),btn))
+  bindCardDropZones()
+  renderFilterBar()
+  applyFilters()
+}
+
+function buildCol(list){
+  const items=getItems(list.id)
+  const col=document.createElement('div')
+  col.className='col'; col.dataset.lid=list.id
+  col.innerHTML=`
+    <div class="col-head">
+      <span class="col-grip" title="drag to reorder">⠿</span>
+      <div class="col-dot" style="background:${list.color}"></div>
+      <span class="col-name" style="color:${list.color}">${esc(list.name)}</span>
+      <span class="col-count">${items.length||''}</span>
+      <button class="ico" title="settings" onclick="openListModal('${list.id}')">⋯</button>
+    </div>
+    <div class="add-row">
+      <input type="text" placeholder="add task…"
+        onkeydown="if(event.key==='Enter')addCard('${list.id}',this)"/>
+      <button class="btn-plus" style="background:${list.color}"
+        onclick="addCard('${list.id}',this.previousElementSibling)">+</button>
+    </div>
+    <div class="card-list" id="cl-${list.id}">
+      ${items.length?items.map(cardHTML).join(''):'<div class="empty">empty</div>'}
+    </div>`
+  col.querySelectorAll('.card').forEach(attachCardDrag)
+  const grip=col.querySelector('.col-grip')
+  grip.setAttribute('draggable','true')
+  grip.addEventListener('dragstart',ev=>{
+    dragCol=list.id; ev.dataTransfer.effectAllowed='move'
+    ev.dataTransfer.setData('col','1')
+    setTimeout(()=>grip.style.opacity='.3',0)
+  })
+  grip.addEventListener('dragend',()=>{
+    grip.style.opacity=''; dragCol=null; removeColIndicator()
+  })
+  return col
+}
+
+function cardHTML(item){
+  const priClass=PRIMAP[item.priority||'none']
+  const priLabel=item.priority&&item.priority!=='none'?item.priority:''
+  const tagObjs=(item.tags||[]).map(id=>getTagById(id)).filter(Boolean)
+  const meta=[
+    priLabel?`<span class="card-priority ${priClass}">${priLabel}</span>`:'',
+    tagObjs.map(t=>`<span class="card-tag"
+      style="background:${hexWithAlpha(t.color,.2)};color:#fff;border-color:${hexWithAlpha(t.color,.4)}"
+      >${esc(t.name)}</span>`).join('')
+  ].join('')
+  return `<div class="card${item.done?' done':''}" draggable="true" data-id="${item.id}">
+    <div class="card-top">
+      <div class="chk${item.done?' on':''}" onclick="toggleDone('${item.id}')">
+        <svg viewBox="0 0 12 10"><polyline points="1,5 4,9 11,1"/></svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${esc(item.title)}</div>
+        ${meta?`<div class="card-meta">${meta}</div>`:''}
+      </div>
+    </div>
+  </div>`
+}
+
+function rerenderList(lid){
+  const items=getItems(lid), cl=document.getElementById('cl-'+lid)
+  if(!cl) return
+  cl.innerHTML=items.length?items.map(cardHTML).join(''):'<div class="empty">empty</div>'
+  cl.querySelectorAll('.card').forEach(attachCardDrag)
+  const cnt=cl.closest('.col').querySelector('.col-count')
+  if(cnt) cnt.textContent=items.length||''
+  applyFilters()
+}
+
+// ── cards ─────────────────────────────────────────────────
+function addCard(lid,input){
+  const v=input.value.trim(); if(!v) return
+  const items=getItems(lid)
+  items.unshift({id:uid(),title:v,desc:'',done:false,priority:'none',tags:[],created:Date.now()})
+  setItems(lid,items); input.value=''; input.focus(); rerenderList(lid)
+}
+function toggleDone(id){
+  const {lid,items,idx}=find(id); if(idx<0) return
+  items[idx].done=!items[idx].done; setItems(lid,items); rerenderList(lid)
+}
+function deleteCard(id){
+  const {lid,items,idx}=find(id); if(idx<0) return
+  items.splice(idx,1); setItems(lid,items); rerenderList(lid)
+}
+function find(id){
+  for(const l of lists){
+    const items=getItems(l.id), idx=items.findIndex(i=>i.id===id)
+    if(idx>=0) return {lid:l.id,items,idx}
+  }
+  return {lid:null,items:[],idx:-1}
+}
+
+// ── card modal ────────────────────────────────────────────
+let CM={lid:null,itemId:null,tags:[]}   // tags = array of tag IDs on this card
+let cmCancelled=false
+let newTagColor='#8b5cf6'   // color for next new tag
+
+function openCardModal(id){
+  const {lid,items,idx}=find(id); if(idx<0) return
+  const item=items[idx]; CM={lid,itemId:id,tags:[...(item.tags||[])]}
+  cmCancelled=false
+  const list=lists.find(l=>l.id===lid)
+  document.getElementById('cm-label').textContent=list?list.name.toLowerCase():'task'
+  document.getElementById('cm-title').value=item.title
+  document.getElementById('cm-desc').innerHTML=item.desc||''
+  document.getElementById('cm-created').textContent=
+    item.created?'created '+fmtFull(item.created):''
+  document.querySelectorAll('.pri-opt').forEach(b=>{
+    b.classList.toggle('sel',b.dataset.v===(item.priority||'none'))
+  })
+  document.getElementById('cm-tag-input').value=''
+  document.getElementById('cm-tag-color').style.background=newTagColor
+  renderTagPool()
+  document.getElementById('card-modal').classList.remove('hide')
+  setTimeout(()=>document.getElementById('cm-title').focus(),30)
+}
+
+function doSaveCard(){
+  if(!CM.itemId) return
+  const {lid,items,idx}=find(CM.itemId); if(idx<0) return
+  const title=document.getElementById('cm-title').value.trim(); if(!title) return
+  items[idx].title=title
+  items[idx].desc=document.getElementById('cm-desc').innerHTML
+  items[idx].priority=document.querySelector('.pri-opt.sel')?.dataset.v||'none'
+  items[idx].tags=[...CM.tags]
+  setItems(lid,items); rerenderList(lid)
+}
+function closeCardModal(){
+  if(!cmCancelled) doSaveCard()
+  cmCancelled=false
+  document.getElementById('card-modal').classList.add('hide')
+  CM={lid:null,itemId:null,tags:[]}
+  hidePicker()
+}
+function cancelCardModal(){ cmCancelled=true; closeCardModal() }
+function deleteFromModal(){
+  if(!CM.itemId) return
+  cmCancelled=true; deleteCard(CM.itemId)
+  document.getElementById('card-modal').classList.add('hide')
+  CM={lid:null,itemId:null,tags:[]}; cmCancelled=false
+  hidePicker()
+}
+function setPri(btn){
+  document.querySelectorAll('.pri-opt').forEach(b=>b.classList.remove('sel'))
+  btn.classList.add('sel')
+}
+function fmt(ev,cmd){ ev.preventDefault(); document.execCommand(cmd,false,null) }
+
+// ── tags ──────────────────────────────────────────────────
+// render unified pool: all global tags, highlighted if on card
+function renderTagPool(){
+  const wrap=document.getElementById('cm-tag-pool'); if(!wrap) return
+  const all=getAllTags()
+  if(!all.length){wrap.innerHTML='';return}
+  wrap.innerHTML=all.map(t=>{
+    const on=CM.tags.includes(t.id)
+    return `<span class="tpill${on?'':' off'}" data-tid="${t.id}"
+      style="background:${hexWithAlpha(t.color,.18)};color:${t.color};border-color:${t.color}${on?'':'33'}">
+      ${esc(t.name)}<span class="tpill-x">✕</span>
+    </span>`
+  }).join('')
+}
+
+// event delegation for tag pool clicks - set up once
+document.addEventListener('DOMContentLoaded',()=>{
+  const pool=document.getElementById('cm-tag-pool')
+  if(!pool) return
+  pool.addEventListener('click',e=>{
+    const pill=e.target.closest('.tpill')
+    if(!pill) return
+    const tid=pill.dataset.tid
+    if(!tid) return
+    
+    // if clicked on X button, delete global tag
+    if(e.target.classList.contains('tpill-x')){
+      e.stopPropagation()
+      deleteGlobalTag(e,tid)
+      return
+    }
+    
+    // otherwise toggle tag on card
+    toggleCardTag(tid)
+  })
+})
+
+// toggle tag on/off current card
+function toggleCardTag(id){
+  const i=CM.tags.indexOf(id)
+  if(i>=0) CM.tags.splice(i,1); else CM.tags.push(id)
+  renderTagPool()
+  // save immediately so changes are visible
+  if(CM.itemId){
+    const {lid,items,idx}=find(CM.itemId)
+    if(idx>=0){
+      items[idx].tags=[...CM.tags]
+      setItems(lid,items)
+      rerenderList(lid)
+    }
+  }
+}
+
+// delete tag from global storage (and remove from current card)
+function deleteGlobalTag(ev,id){
+  ev.stopPropagation()
+  saveAllTags(getAllTags().filter(t=>t.id!==id))
+  const i=CM.tags.indexOf(id); if(i>=0) CM.tags.splice(i,1)
+  // remove from active filters
+  activeFilters.delete(id)
+  // also remove from all items
+  lists.forEach(l=>{
+    const items=getItems(l.id)
+    let changed=false
+    items.forEach(item=>{
+      const ti=item.tags?item.tags.indexOf(id):-1
+      if(ti>=0){item.tags.splice(ti,1);changed=true}
+    })
+    if(changed) setItems(l.id,items)
+  })
+  renderTagPool()
+  renderBoard()
+}
+
+// create new tag from input
+function handleTagInput(ev){
+  if(ev.key!=='Enter') return
+  ev.preventDefault()
+  const input=document.getElementById('cm-tag-input')
+  const name=input.value.trim(); if(!name) return
+  const all=getAllTags()
+  // check if name already exists
+  let tag=all.find(t=>t.name.toLowerCase()===name.toLowerCase())
+  if(!tag){
+    tag={id:uid(),name,color:newTagColor}
+    all.push(tag); saveAllTags(all)
+    // pick next color
+    const palette=['#8b5cf6','#ec4899','#f97316','#10b981','#06b6d4','#f59e0b','#6366f1']
+    newTagColor=palette[all.length%palette.length]
+    document.getElementById('cm-tag-color').style.background=newTagColor
+    renderFilterBar()
+  }
+  if(!CM.tags.includes(tag.id)) CM.tags.push(tag.id)
+  input.value=''
+  renderTagPool()
+}
+
+// open color picker aimed at the tag color button
+function openTagPicker(el){
+  showPicker(el, newTagColor, hex=>{
+    newTagColor=hex
+    document.getElementById('cm-tag-color').style.background=hex
+  })
+}
+
+// ── list modal ────────────────────────────────────────────
+let LM={lid:null,color:null}
+let lmCancelled=false
+
+function openListModal(lid){
+  const list=lists.find(l=>l.id===lid); if(!list) return
+  LM={lid,color:list.color}; lmCancelled=false
+  document.getElementById('lm-name').value=list.name
+  document.getElementById('lm-dot').style.background=list.color
+  document.getElementById('list-modal').classList.remove('hide')
+  setTimeout(()=>document.getElementById('lm-name').focus(),30)
+}
+function doSaveList(){
+  if(!LM.lid) return
+  const list=lists.find(l=>l.id===LM.lid); if(!list) return
+  const name=document.getElementById('lm-name').value.trim()
+  if(name) list.name=name
+  if(LM.color) list.color=LM.color
+  S.set('lists',lists); renderBoard()
+}
+function closeListModal(){
+  if(!lmCancelled) doSaveList()
+  lmCancelled=false
+  document.getElementById('list-modal').classList.add('hide')
+  LM={lid:null,color:null}; hidePicker()
+}
+function cancelListModal(){ lmCancelled=true; closeListModal() }
+function deleteList(){
+  if(!LM.lid) return
+  S.del('items_'+LM.lid)
+  lists=lists.filter(l=>l.id!==LM.lid)
+  S.set('lists',lists); lmCancelled=true; closeListModal(); renderBoard()
+}
+function createList(){
+  const cols=['#8b5cf6','#6366f1','#ec4899','#f97316','#10b981','#06b6d4']
+  const color=cols[lists.length%cols.length]
+  const list={id:uid(),name:'new list',color}
+  lists.push(list); S.set('lists',lists); renderBoard()
+  openListModal(list.id)
+}
+
+// ── color picker ──────────────────────────────────────────
+function hsvToHex(h,s,v){
+  s/=100; v/=100
+  const f=n=>{const k=(n+h/60)%6;return v-v*s*Math.max(Math.min(k,4-k,1),0)}
+  const r=Math.round(f(5)*255),g=Math.round(f(3)*255),b=Math.round(f(1)*255)
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')
+}
+function hexToHSV(hex){
+  hex=hex.replace('#','')
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('')
+  const r=parseInt(hex.slice(0,2),16)/255
+  const g=parseInt(hex.slice(2,4),16)/255
+  const b=parseInt(hex.slice(4,6),16)/255
+  const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min
+  let h=0
+  if(d){
+    if(max===r) h=((g-b)/d)%6
+    else if(max===g) h=(b-r)/d+2
+    else h=(r-g)/d+4
+    h=Math.round(h*60); if(h<0) h+=360
+  }
+  return {h,s:max?Math.round(d/max*100):0,v:Math.round(max*100)}
+}
+
+let CP={h:270,s:70,v:90,cb:null}
+
+function drawSV(){
+  const cv=document.getElementById('cp-sv')
+  const ctx=cv.getContext('2d')
+  const w=cv.width,hh=cv.height
+  ctx.clearRect(0,0,w,hh)
+  ctx.fillStyle=`hsl(${CP.h},100%,50%)`; ctx.fillRect(0,0,w,hh)
+  const gw=ctx.createLinearGradient(0,0,w,0)
+  gw.addColorStop(0,'rgba(255,255,255,1)'); gw.addColorStop(1,'rgba(255,255,255,0)')
+  ctx.fillStyle=gw; ctx.fillRect(0,0,w,hh)
+  const gb=ctx.createLinearGradient(0,0,0,hh)
+  gb.addColorStop(0,'rgba(0,0,0,0)'); gb.addColorStop(1,'rgba(0,0,0,1)')
+  ctx.fillStyle=gb; ctx.fillRect(0,0,w,hh)
+  const cur=document.getElementById('cp-cur')
+  cur.style.left=CP.s/100*w+'px'; cur.style.top=(1-CP.v/100)*hh+'px'
+  const hex=hsvToHex(CP.h,CP.s,CP.v)
+  document.getElementById('cp-swatch').style.background=hex
+  document.getElementById('cp-hex').value=hex
+  if(CP.cb) CP.cb(hex)
+}
+function showPicker(anchor,initColor,cb){
+  CP.cb=cb
+  const {h,s,v}=hexToHSV(initColor||'#8b5cf6')
+  CP.h=h; CP.s=s; CP.v=v
+  document.getElementById('cp-hue').value=h
+  const pk=document.getElementById('cpicker')
+  pk.classList.remove('hide')
+  const r=anchor.getBoundingClientRect()
+  let top=r.bottom+6, left=r.left
+  if(left+218>window.innerWidth-8) left=window.innerWidth-226
+  if(top+210>window.innerHeight-8) top=r.top-216
+  pk.style.top=top+'px'; pk.style.left=left+'px'
+  drawSV()
+}
+function hidePicker(){ document.getElementById('cpicker').classList.add('hide'); CP.cb=null }
+function openPickerForList(){
+  if(!LM.lid) return
+  const list=lists.find(l=>l.id===LM.lid); if(!list) return
+  showPicker(document.getElementById('lm-dot'),list.color,hex=>{
+    LM.color=hex; document.getElementById('lm-dot').style.background=hex
+  })
+}
+const cpSv=document.getElementById('cp-sv')
+function cpSvPick(ev){
+  const r=cpSv.getBoundingClientRect()
+  CP.s=Math.max(0,Math.min(100,(ev.clientX-r.left)/r.width*100))
+  CP.v=Math.max(0,Math.min(100,(1-(ev.clientY-r.top)/r.height)*100))
+  drawSV()
+}
+let cpDrag=false
+cpSv.addEventListener('mousedown',ev=>{cpDrag=true;cpSvPick(ev)})
+document.addEventListener('mousemove',ev=>{if(cpDrag)cpSvPick(ev)})
+document.addEventListener('mouseup',()=>{cpDrag=false})
+function cpHueChange(v){ CP.h=parseInt(v); drawSV() }
+function cpHexChange(v){
+  if(/^#[0-9a-fA-F]{6}$/.test(v)){
+    const hsv=hexToHSV(v)
+    CP.h=hsv.h; CP.s=hsv.s; CP.v=hsv.v
+    document.getElementById('cp-hue').value=CP.h; drawSV()
+  }
+}
+
+// ── card clicks — pointerup+distance bypasses draggable=true click suppression ──
+let cardPtrTarget=null,cardPtrX=0,cardPtrY=0
+document.getElementById('board').addEventListener('pointerdown',ev=>{
+  if(ev.target.closest('.chk')) return
+  const card=ev.target.closest('.card')
+  if(!card) return
+  cardPtrTarget=card; cardPtrX=ev.clientX; cardPtrY=ev.clientY
+})
+document.addEventListener('pointerup',ev=>{
+  const card=cardPtrTarget; cardPtrTarget=null
+  if(!card) return
+  if(Math.hypot(ev.clientX-cardPtrX,ev.clientY-cardPtrY)>6) return
+  if(ev.target.closest('.chk')) return
+  // don't open if a modal is already showing
+  if(!document.getElementById('card-modal').classList.contains('hide')) return
+  if(!document.getElementById('list-modal').classList.contains('hide')) return
+  openCardModal(card.dataset.id)
+})
+
+// ── drag & drop cards ─────────────────────────────────────
+let drag=null,ph=null
+function attachCardDrag(card){
+  card.addEventListener('dragstart',ev=>{
+    if(dragCol){ev.preventDefault();return}
+    drag={id:card.dataset.id}; card.classList.add('dragging')
+    ev.dataTransfer.effectAllowed='move'; ev.dataTransfer.setData('text/plain','')
+  })
+  card.addEventListener('dragend',()=>{
+    card.classList.remove('dragging'); removePH()
+    document.querySelectorAll('.col').forEach(c=>c.classList.remove('over'))
+    drag=null
+  })
+}
+
+// ── drag & drop columns ───────────────────────────────────
+let dragCol=null,colIndicator=null,dragColCurrTarget=null,dragColCurrAfter=false
+function removeColIndicator(){
+  if(colIndicator&&colIndicator.parentNode) colIndicator.parentNode.removeChild(colIndicator)
+  colIndicator=null
+}
+function bindCardDropZones(){
+  document.querySelectorAll('.col').forEach(col=>{
+    const lid=col.dataset.lid, cl=col.querySelector('.card-list')
+    col.addEventListener('dragover',ev=>{
+      ev.preventDefault()
+      if(dragCol){
+        if(dragCol===lid) return
+        ev.dataTransfer.dropEffect='move'
+        const board=document.getElementById('board'), tr=col.getBoundingClientRect()
+        const after=ev.clientX>=tr.left+tr.width/2
+        dragColCurrTarget=lid; dragColCurrAfter=after
+        removeColIndicator()
+        colIndicator=document.createElement('div')
+        colIndicator.className='col-drop-indicator'
+        after?board.insertBefore(colIndicator,col.nextSibling):board.insertBefore(colIndicator,col)
+      } else if(drag){
+        col.classList.add('over')
+        const a=afterEl(cl,ev.clientY)
+        removePH(); ph=document.createElement('div'); ph.className='placeholder'
+        a?cl.insertBefore(ph,a):cl.appendChild(ph)
+      }
+    })
+    col.addEventListener('dragleave',ev=>{
+      if(!col.contains(ev.relatedTarget)){col.classList.remove('over');if(!dragCol)removePH()}
+    })
+    col.addEventListener('drop',ev=>{
+      ev.preventDefault(); col.classList.remove('over')
+      if(dragCol){
+        removeColIndicator(); if(dragCol===lid) return
+        const fi=lists.findIndex(l=>l.id===dragCol), ti=lists.findIndex(l=>l.id===lid)
+        if(fi<0||ti<0) return
+        const tr=col.getBoundingClientRect()
+        const [moved]=lists.splice(fi,1)
+        const ni=lists.findIndex(l=>l.id===lid)
+        lists.splice(ev.clientX>=tr.left+tr.width/2?ni+1:ni,0,moved)
+        S.set('lists',lists); dragCol=null; renderBoard()
+      } else if(drag){
+        removePH()
+        const {lid:sl,items:si,idx:si2}=find(drag.id); if(si2<0) return
+        const [item]=si.splice(si2,1); setItems(sl,si)
+        const ti=getItems(lid), a=afterEl(cl,ev.clientY)
+        let tIdx=ti.length
+        if(a){const ai=ti.findIndex(i=>i.id===a.dataset.id);if(ai>=0)tIdx=ai}
+        ti.splice(tIdx,0,item); setItems(lid,ti)
+        rerenderList(sl); if(lid!==sl) rerenderList(lid); drag=null
+      }
+    })
+  })
+}
+// board-level col drag listeners — added once only
+document.getElementById('board').addEventListener('dragover',ev=>{if(dragCol)ev.preventDefault()})
+document.getElementById('board').addEventListener('drop',ev=>{
+  if(!dragCol) return; ev.preventDefault()
+  if(dragColCurrTarget){
+    const fi=lists.findIndex(l=>l.id===dragCol)
+    if(fi>=0){
+      const [moved]=lists.splice(fi,1)
+      const ni=lists.findIndex(l=>l.id===dragColCurrTarget)
+      if(ni>=0) lists.splice(dragColCurrAfter?ni+1:ni,0,moved)
+      else lists.push(moved)
+      S.set('lists',lists); renderBoard()
+    }
+  }
+  removeColIndicator(); dragCol=null; dragColCurrTarget=null
+})
+
+function afterEl(container,y){
+  return [...container.querySelectorAll('.card:not(.dragging)')].reduce((c,el)=>{
+    const b=el.getBoundingClientRect(),off=y-b.top-b.height/2
+    return off<0&&off>c.off?{off,el}:c
+  },{off:-Infinity,el:null}).el
+}
+function removePH(){if(ph&&ph.parentNode)ph.parentNode.removeChild(ph);ph=null}
+
+// ── helpers ───────────────────────────────────────────────
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function fmtFull(ts){
+  return new Date(ts).toLocaleString('en',{month:'short',day:'numeric',
+    year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})
+}
+
+// close modals by clicking on the backdrop area (outside the inner modal box)
+document.getElementById('card-modal').addEventListener('pointerdown',ev=>{
+  if(!ev.target.closest('#card-modal .modal')&&!ev.target.closest('#cpicker')) closeCardModal()
+})
+document.getElementById('list-modal').addEventListener('pointerdown',ev=>{
+  if(!ev.target.closest('#list-modal .modal')&&!ev.target.closest('#cpicker')) closeListModal()
+})
+// hide color picker when clicking outside it
+document.addEventListener('pointerdown',ev=>{
+  const pkOpen=!document.getElementById('cpicker').classList.contains('hide')
+  if(pkOpen&&!ev.target.closest('#cpicker')&&!ev.target.closest('#lm-dot')&&!ev.target.closest('.tag-color-btn')){
+    hidePicker()
+  }
+})
+document.addEventListener('keydown',ev=>{
+  if(ev.key==='Escape'){
+    const cm=document.getElementById('card-modal')
+    const lm=document.getElementById('list-modal')
+    if(!cm.classList.contains('hide')) closeCardModal()
+    else if(!lm.classList.contains('hide')) closeListModal()
+    else hidePicker()
+  }
+})
+
+renderBoard()
+</script>
+</body>
+</html>
