@@ -25,9 +25,22 @@ A minimal Trello-style task manager for organizing work.
 
 ## Claude Skills
 
-Custom build skills for Claude.
+Custom-built skills for Claude.
 
-**Features:**
-- Username generator
+**Activation:** Download the .md file, navigate to *Manage Skills* in Claude, and upload the file.
 
-**Usage:** Navigate to manage skills in Claude, upload the .skill file, type /username-generator in chat.
+
+### *Username Generator*
+A username generator that provides various options based on your specific context.
+
+**Usage:** Type `/username` in the chat.
+
+
+### *TLDR*
+Summarizes files, URLs, text, or the current conversation for you.
+* **Standard length:** 3 to 6 sentences (unless specified otherwise).
+* **Language:** Default is Dutch; other languages available upon request.
+
+**Usage:** Type `/tldr` and paste text, attach a file, or share a URL.
+
+---
