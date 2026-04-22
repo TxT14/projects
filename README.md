@@ -20,3 +20,12 @@ A minimal Trello-style task manager for organizing work.
 **Tech:** Vanilla HTML/CSS/JavaScript - no frameworks, no dependencies.
 
 **Usage:** Open `ergon/index.html` in your browser.
+
+## Claude Skills
+
+Custom build skills for Claude.
+
+**Features**
+- Username generator
+
+**Usage:** Navigate to manage skills in Claude, upload the .skill file, type /username-generator in chat.
